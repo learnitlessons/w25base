@@ -1,0 +1,40 @@
+New-VHD -ParentPath "D:\VM\vhd\win11.vhdx" -Path D:\vm\test25\test25.vhdx -Differencing -Verbose
+New-VM -Name test25 -MemoryStartupBytes 4Gb -VHDPath D:\vm\test25\test25.vhdx -Path D:\vm\test25  -Generation 2 -SwitchName Ext
+
+set-vm test25 -CheckpointType Disabled
+start-vm test25
+
+# Enter-PSSession
+$Credentials=Get-Credential
+etsn -VMName test25 -Credential $Credentials
+
+Rename-Computer -NewName "TESTtest25" -Restart -Force
+
+# Configure IP settings
+$interfaceIndex = (Get-NetAdapter | Where-Object {$_.Status -eq "Up"}).InterfaceIndex
+New-NetIPAddress -InterfaceIndex $interfaceIndex -IPAddress 192.168.2.10 -PrefixLength 24 -DefaultGateway 192.168.2.1
+Set-DnsClientServerAddress -InterfaceIndex $interfaceIndex -ServerAddresses 192.168.2.22
+
+Stop-VM -Name test25 -Force
+Set-VM test25 -CheckpointType Production
+Get-VM -Name test25
+Checkpoint-VM -Name test25 -SnapshotName 'initial'
+Restore-VMSnapshot -VMName test25 -Name "initial" -Confirm:$false
+Start-VM -Name test25
+
+Stop-VM -Name test25 
+Remove-VM test25 -Force
+Remove-Item -Recurse D:\vm\test25 -Force
+
+
+$Credentials=Get-Credential
+etsn -VMName lit-svr1 -Credential $Credentials
+
+get-vm LIT-* | Checkpoint-VM -SnapshotName 'temp'
+get-vm LIT-* | Restore-VMSnapshot -Name "Lab ..." -Confirm:$false
+get-vm LIT-* | Start-VM
+
+
+Install-WindowsFeature -Name DNS -IncludeManagementTools
+Add-DnsServerSecondaryZone -Name "learnitlessons.com" -ZoneFile "learnitlessons.com.dns" -MasterServers 192.168.2.22
+ 
