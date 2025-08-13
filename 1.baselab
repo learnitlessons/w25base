@@ -1,30 +1,30 @@
-New-VHD -ParentPath "D:\VM\vhd\win11.vhdx" -Path D:\vm\test25\test25.vhdx -Differencing -Verbose
-New-VM -Name test25 -MemoryStartupBytes 4Gb -VHDPath D:\vm\test25\test25.vhdx -Path D:\vm\test25  -Generation 2 -SwitchName Ext
+New-VHD -ParentPath "D:\VM\vhd\w25gui.vhdx" -Path D:\vm\w25-lit-dc1\w25-lit-dc1.vhdx -Differencing -Verbose
+New-VM -Name w25-lit-dc1 -MemoryStartupBytes 4Gb -VHDPath D:\vm\w25-lit-dc1\w25-lit-dc1.vhdx -Path D:\vm\w25-lit-dc1  -Generation 2 -SwitchName Ext
 
-set-vm test25 -CheckpointType Disabled
-start-vm test25
+set-vm w25-lit-dc1 -CheckpointType Disabled
+start-vm w25-lit-dc1
 
 # Enter-PSSession
 $Credentials=Get-Credential
-etsn -VMName test25 -Credential $Credentials
+etsn -VMName w25-lit-dc1 -Credential $Credentials
 
-Rename-Computer -NewName "TESTtest25" -Restart -Force
+Rename-Computer -NewName "w25-lit-dc1" -Restart -Force
 
 # Configure IP settings
 $interfaceIndex = (Get-NetAdapter | Where-Object {$_.Status -eq "Up"}).InterfaceIndex
-New-NetIPAddress -InterfaceIndex $interfaceIndex -IPAddress 192.168.2.10 -PrefixLength 24 -DefaultGateway 192.168.2.1
-Set-DnsClientServerAddress -InterfaceIndex $interfaceIndex -ServerAddresses 192.168.2.22
+New-NetIPAddress -InterfaceIndex $interfaceIndex -IPAddress 192.168.1.22 -PrefixLength 24 -DefaultGateway 192.168.1.1
+Set-DnsClientServerAddress -InterfaceIndex $interfaceIndex -ServerAddresses 192.168.1.22
 
-Stop-VM -Name test25 -Force
-Set-VM test25 -CheckpointType Production
-Get-VM -Name test25
-Checkpoint-VM -Name test25 -SnapshotName 'initial'
-Restore-VMSnapshot -VMName test25 -Name "initial" -Confirm:$false
-Start-VM -Name test25
+Stop-VM -Name w25-lit-dc1 -Force
+Set-VM w25-lit-dc1 -CheckpointType Production
+Get-VM -Name w25-lit-dc1
+Checkpoint-VM -Name w25-lit-dc1 -SnapshotName 'initial'
+Restore-VMSnapshot -VMName w25-lit-dc1 -Name "initial" -Confirm:$false
+Start-VM -Name w25-lit-dc1
 
-Stop-VM -Name test25 
-Remove-VM test25 -Force
-Remove-Item -Recurse D:\vm\test25 -Force
+Stop-VM -Name w25-lit-dc1 
+Remove-VM w25-lit-dc1 -Force
+Remove-Item -Recurse D:\vm\w25-lit-dc1 -Force
 
 
 $Credentials=Get-Credential
@@ -37,4 +37,3 @@ get-vm LIT-* | Start-VM
 
 Install-WindowsFeature -Name DNS -IncludeManagementTools
 Add-DnsServerSecondaryZone -Name "learnitlessons.com" -ZoneFile "learnitlessons.com.dns" -MasterServers 192.168.2.22
- 
